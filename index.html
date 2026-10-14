@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entschlüsselungssystem</title>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800&family=Rajdhani:wght@400;500;600;700&display=swap');
+
+        :root {
+            --bg: #060810;
+            --panel: #0c111e;
+            --panel-light: #111a2a;
+            --border: #202d40;
+            --text: #e8f1ff;
+            --muted: #71829d;
+            --cyan: #44e8ff;
+            --green: #57ffb1;
+            --red: #ff425d;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            min-height: 100vh;
+            min-height: 100svh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 24px 14px;
+            overflow-x: hidden;
+            background:
+                radial-gradient(ellipse at 50% 0%, #14203a 0%, transparent 52%),
+                radial-gradient(ellipse at 100% 100%, #101b30 0%, transparent 35%),
+                var(--bg);
+            color: var(--text);
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        button {
+            font: inherit;
+        }
+
+        .console {
+            width: min(880px, 100%);
+            position: relative;
+            padding: clamp(20px, 5vw, 42px);
+            background: linear-gradient(145deg, #0d1422 0%, #090d17 100%);
+            border: 1px solid #25334b;
+            box-shadow:
+                0 0 0 1px rgba(68, 232, 255, 0.035),
+                0 25px 90px rgba(0, 0, 0, 0.55),
+                0 0 45px rgba(43, 131, 255, 0.045);
+            clip-path: polygon(
+                0 18px,
+                18px 0,
+                calc(100% - 18px) 0,
+                100% 18px,
+                100% calc(100% - 18px),
+                calc(100% - 18px) 100%,
+                18px 100%,
+                0 calc(100% - 18px)
+            );
+        }
+
+        .top-line {
+            position: absolute;
+            top: 0;
+            left: 25%;
+            width: 50%;
+            height: 2px;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                var(--cyan),
+                transparent
+            );
+            box-shadow: 0 0 15px rgba(68, 232, 255, 0.5);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 34px;
+        }
+
+        .system-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            margin-bottom: 17px;
+            color: var(--cyan);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 10px;
+            letter-spacing: 3px;
+        }
+
+        .system-dot {
+            width: 7px;
+            height: 7px;
+            background: var(--green);
+            border-radius: 50%;
+            box-shadow: 0 0 12px var(--green);
+            animation: pulse 1.8s infinite;
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(23px, 5vw, 37px);
+            font-weight: 700;
+            letter-spacing: clamp(1px, 0.6vw, 5px);
+            line-height: 1.35;
+            text-shadow: 0 0 24px rgba(68, 232, 255, 0.12);
+        }
+
+        .subtitle {
+            margin-top: 13px;
+            color: #8b9bb6;
+            font-size: 17px;
+            letter-spacing: 1px;
+        }
+
+        .divider {
+            height: 1px;
+            margin-bottom: 29px;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                #253650 15%,
+                #253650 85%,
+                transparent
+            );
+        }
+
+        .board-headings {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: clamp(10px, 3vw, 32px);
+            margin-bottom: 13px;
+        }
+
+        .board-heading {
+            color: #8494ad;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 9px;
+            letter-spacing: 1.5px;
+        }
+
+        .board-heading:last-child {
+            text-align: right;
+        }
+
+        .connection-grid {
+            position: relative;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            grid-template-rows: repeat(4, 76px);
+            gap: 10px clamp(10px, 3vw, 32px);
+            isolation: isolate;
+        }
+
+        .cable-layer {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            overflow: visible;
+            pointer-events: none;
+        }
+
+        .cable-shadow {
+            fill: none;
+            stroke: #02040a;
+            stroke-width: 17;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .cable-line {
+            fill: none;
+            stroke-width: 7;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .wire-selector,
+        .port-button {
+            position: relative;
+            z-index: 2;
+            min-width: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            border: 1px solid #243147;
+            color: var(--text);
+            background: linear-gradient(140deg, #141d2d, #0b111d);
+            cursor: pointer;
+            transition:
+                border-color 180ms ease,
+                background 180ms ease,
+                box-shadow 180ms ease,
+                transform 180ms ease;
+        }
+
+        .wire-selector {
+            grid-column: 1;
+            justify-content: flex-start;
+            gap: clamp(5px, 1.3vw, 12px);
+            padding: 0 clamp(7px, 1.6vw, 15px);
+            text-align: left;
+        }
+
+        .wire-selector:hover,
+        .wire-selector.is-selected {
+            border-color: var(--wire-color);
+            background: linear-gradient(
+                140deg,
+                color-mix(in srgb, var(--wire-color) 13%, #141d2d),
+                #0b111d
+            );
+            box-shadow:
+                inset 0 0 22px color-mix(in srgb, var(--wire-color) 7%, transparent),
+                0 0 13px color-mix(in srgb, var(--wire-color) 12%, transparent);
+        }
+
+        .wire-selector.is-selected {
+            transform: translateX(3px);
+        }
+
+        .wire-number {
+            color: #61728c;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 9px;
+        }
+
+        .wire-name {
+            min-width: 0;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 600;
+            font-size: clamp(9px, 1.5vw, 12px);
+            letter-spacing: 0.5px;
+        }
+
+        .wire-swatch {
+            flex: 1;
+            min-width: 7px;
+            height: 3px;
+            background: var(--wire-color);
+            border-radius: 3px;
+            box-shadow: 0 0 8px var(--wire-color);
+        }
+
+        .plug {
+            width: 25px;
+            height: 34px;
+            flex-shrink: 0;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 2px solid #66768c;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #172032, #35445b, #172032);
+            box-shadow: inset 0 0 6px #050812;
+        }
+
+        .plug::before {
+            content: '';
+            position: absolute;
+            right: -5px;
+            width: 5px;
+            height: 18px;
+            background: #a6b7cb;
+            border-radius: 0 2px 2px 0;
+            box-shadow: 0 0 4px rgba(255, 255, 255, 0.14);
+        }
+
+        .plug::after {
+            content: '';
+            width: 7px;
+            height: 18px;
+            border-radius: 2px;
+            background: var(--wire-color);
+            box-shadow: 0 0 9px var(--wire-color);
+        }
+
+        .port-button {
+            grid-column: 2;
+            justify-content: flex-start;
+            gap: 12px;
+            padding: 0 clamp(7px, 1.6vw, 15px);
+            text-align: left;
+        }
+
+        .port-button:hover,
+        .port-button.is-occupied {
+            border-color: var(--signal-color, #34445c);
+            box-shadow: inset 0 0 22px
+                color-mix(in srgb, var(--signal-color, transparent) 6%, transparent);
+        }
+
+        .port-button:focus-visible,
+        .wire-selector:focus-visible,
+        .decode-button:focus-visible,
+        .close-button:focus-visible {
+            outline: 2px solid var(--cyan);
+            outline-offset: 3px;
+        }
+
+        .socket {
+            width: 43px;
+            height: 43px;
+            flex-shrink: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            border: 3px solid #74849a;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #26364c, #0a0e18 68%);
+            box-shadow:
+                inset 0 0 0 3px #101827,
+                inset 0 0 9px #000,
+                0 2px 5px #000;
+            transition: border-color 180ms ease, box-shadow 180ms ease;
+        }
+
+        .socket::before {
+            content: '';
+            position: absolute;
+            inset: 5px;
+            border: 1px solid #3e5069;
+            border-radius: 50%;
+        }
+
+        .socket-core {
+            width: 17px;
+            height: 17px;
+            border: 2px solid #4d6078;
+            border-radius: 50%;
+            background:
+                radial-gradient(circle at 35% 30%, #152136, #02050b 70%);
+            box-shadow: inset 0 0 7px #000;
+            transition: all 180ms ease;
+        }
+
+        .port-button.is-occupied .socket {
+            border-color: var(--signal-color);
+            box-shadow:
+                inset 0 0 0 3px #101827,
+                inset 0 0 9px #000,
+                0 0 12px color-mix(in srgb, var(--signal-color) 25%, transparent);
+        }
+
+        .port-button.is-occupied .socket-core {
+            border-color: var(--signal-color);
+            background: var(--signal-color);
+            box-shadow: 0 0 10px var(--signal-color);
+        }
+
+        .port-label {
+            color: #cbd6e6;
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(9px, 1.5vw, 11px);
+            letter-spacing: 1px;
+        }
+
+        .port-indicator {
+            width: 5px;
+            height: 5px;
+            margin-left: auto;
+            flex-shrink: 0;
+            border-radius: 50%;
+            background: #35435a;
+        }
+
+        .port-button.is-occupied .port-indicator {
+            background: var(--signal-color);
+            box-shadow: 0 0 8px var(--signal-color);
+        }
+
+        .footer {
+            margin-top: 28px;
+        }
+
+        .status {
+            min-height: 24px;
+            margin-bottom: 19px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 9px;
+            color: #8293ac;
+            text-align: center;
+            font-size: 14px;
+            letter-spacing: 0.8px;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            flex-shrink: 0;
+            border-radius: 50%;
+            background: var(--cyan);
+            box-shadow: 0 0 8px var(--cyan);
+        }
+
+        .status.error {
+            color: #ff7a8b;
+        }
+
+        .status.error .status-dot {
+            background: var(--red);
+            box-shadow: 0 0 8px var(--red);
+        }
+
+        .status.success {
+            color: var(--green);
+        }
+
+        .status.success .status-dot {
+            background: var(--green);
+            box-shadow: 0 0 8px var(--green);
+        }
+
+        .decode-button {
+            position: relative;
+            width: 100%;
+            min-height: 57px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            overflow: hidden;
+            border: 1px solid #3ce0f9;
+            background: linear-gradient(100deg, #123043, #123047 50%, #10263c);
+            color: #e8fcff;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 600;
+            font-size: clamp(10px, 2vw, 13px);
+            letter-spacing: 2px;
+            cursor: pointer;
+            box-shadow:
+                inset 0 0 20px rgba(68, 232, 255, 0.08),
+                0 0 20px rgba(68, 232, 255, 0.06);
+            transition: 180ms ease;
+        }
+
+        .decode-button::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            transform: translateX(-100%);
+            background: linear-gradient(
+                100deg,
+                transparent,
+                rgba(68, 232, 255, 0.13),
+                transparent
+            );
+            transition: transform 350ms ease;
+        }
+
+        .decode-button:hover {
+            background: linear-gradient(100deg, #164158, #143a53);
+            box-shadow: 0 0 25px rgba(68, 232, 255, 0.17);
+        }
+
+        .decode-button:hover::before {
+            transform: translateX(100%);
+        }
+
+        .decode-button span {
+            position: relative;
+        }
+
+        .button-icon {
+            font-size: 18px;
+            color: var(--cyan);
+        }
+
+        /* Erfolgsmeldung */
+
+        .success-dialog {
+            width: min(440px, calc(100% - 32px));
+            margin: auto;
+            padding: 0;
+            overflow: hidden;
+            border: 1px solid #3a786e;
+            background: #0b1420;
+            color: var(--text);
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.8);
+        }
+
+        .success-dialog::backdrop {
+            background: rgba(2, 5, 12, 0.86);
+            backdrop-filter: blur(8px);
+        }
+
+        .dialog-content {
+            position: relative;
+            padding: 35px 28px 28px;
+            text-align: center;
+        }
+
+        .dialog-top-line {
+            position: absolute;
+            inset: 0 15% auto;
+            height: 2px;
+            background: var(--green);
+            box-shadow: 0 0 18px var(--green);
+        }
+
+        .success-icon {
+            width: 65px;
+            height: 65px;
+            margin: 0 auto 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(87, 255, 177, 0.6);
+            border-radius: 50%;
+            color: var(--green);
+            background: rgba(87, 255, 177, 0.07);
+            box-shadow: 0 0 28px rgba(87, 255, 177, 0.1);
+            font-size: 30px;
+        }
+
+        .success-title {
+            color: var(--green);
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(16px, 4vw, 21px);
+            line-height: 1.5;
+            letter-spacing: 1px;
+        }
+
+        .success-message {
+            margin-top: 17px;
+            color: #c1d0e0;
+            font-size: 19px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .close-button {
+            width: 100%;
+            min-height: 47px;
+            margin-top: 28px;
+            border: 1px solid #317b67;
+            color: var(--green);
+            background: rgba(87, 255, 177, 0.06);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 10px;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: background 180ms ease;
+        }
+
+        .close-button:hover {
+            background: rgba(87, 255, 177, 0.13);
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                box-shadow: 0 0 12px var(--green);
+            }
+            50% {
+                opacity: 0.55;
+                box-shadow: 0 0 4px var(--green);
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 12px 8px;
+            }
+
+            .console {
+                padding: 27px 13px;
+            }
+
+            .header {
+                margin-bottom: 25px;
+            }
+
+            .system-label {
+                font-size: 8px;
+                letter-spacing: 2px;
+            }
+
+            .subtitle {
+                font-size: 15px;
+            }
+
+            .board-headings {
+                gap: 10px;
+            }
+
+            .board-heading {
+                font-size: 8px;
+                letter-spacing: 0.8px;
+            }
+
+            .connection-grid {
+                grid-template-rows: repeat(4, 68px);
+                gap: 9px 10px;
+            }
+
+            .wire-selector {
+                gap: 6px;
+                padding: 0 6px;
+            }
+
+            .wire-number {
+                display: none;
+            }
+
+            .wire-name {
+                font-size: 9px;
+                letter-spacing: 0;
+            }
+
+            .plug {
+                width: 18px;
+                height: 29px;
+            }
+
+            .plug::before {
+                right: -4px;
+                width: 4px;
+                height: 14px;
+            }
+
+            .plug::after {
+                width: 5px;
+                height: 14px;
+            }
+
+            .port-button {
+                gap: 7px;
+                padding: 0 7px;
+            }
+
+            .socket {
+                width: 36px;
+                height: 36px;
+                border-width: 2px;
+            }
+
+            .socket-core {
+                width: 14px;
+                height: 14px;
+            }
+
+            .port-label {
+                font-size: 8px;
+                letter-spacing: 0;
+            }
+
+            .footer {
+                margin-top: 22px;
+            }
+
+            .status {
+                font-size: 12px;
+                letter-spacing: 0.3px;
+            }
+
+            .decode-button {
+                min-height: 53px;
+                letter-spacing: 1px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <main class="console">
+        <div class="top-line"></div>
+
+        <header class="header">
+            <div class="system-label">
+                <span class="system-dot"></span>
+                ENCRYPTED ACCESS SYSTEM
+            </div>
+
+            <h1>ENTSCHLÜSSELUNG</h1>
+
+            <p class="subtitle">
+                Verbinde die Kabel mit den richtigen Anschlüssen.
+            </p>
+        </header>
+
+        <div class="divider"></div>
+
+        <div class="board-headings">
+            <div class="board-heading">SIGNALLEITUNGEN / OUTPUT</div>
+            <div class="board-heading">ANSCHLÜSSE / INPUT</div>
+        </div>
+
+        <section
+            class="connection-grid"
+            id="connectionGrid"
+            aria-label="Kabel und Anschlüsse verbinden"
+        >
+            <svg
+                id="cableLayer"
+                class="cable-layer"
+                aria-hidden="true"
+            ></svg>
+        </section>
+
+        <footer class="footer">
+            <div class="status" id="status" role="status" aria-live="polite">
+                <span class="status-dot"></span>
+                <span id="statusText">WÄHLE EIN KABEL UND EINEN ANSCHLUSS.</span>
+            </div>
+
+            <button class="decode-button" id="decodeButton" type="button">
+                <span class="button-icon">⌁</span>
+                <span>VERBINDUNG ÜBERPRÜFEN</span>
+                <span class="button-icon">⌁</span>
+            </button>
+        </footer>
+    </main>
+
+    <dialog class="success-dialog" id="successDialog">
+        <div class="dialog-content">
+            <div class="dialog-top-line"></div>
+
+            <div class="success-icon">✓</div>
+
+            <h2 class="success-title">ENTSCHLÜSSELUNG ERFOLGREICH</h2>
+
+            <p class="success-message" id="successMessage"></p>
+
+            <button
+                class="close-button"
+                id="closeDialog"
+                type="button"
+            >
+                SCHLIESSEN
+            </button>
+        </div>
+    </dialog>
+
+    <script>
+        /*
+        ============================================================
+        KONFIGURATION
+        ============================================================
+
+        Hier legst du die einzig richtige Kombination fest.
+
+        Jeder Schlüssel steht für ein Kabel:
+            red    = Rot
+            blue   = Blau
+            yellow = Gelb
+            green  = Grün
+
+        Der Wert gibt den richtigen Anschluss an:
+            A, B, C oder D
+
+        Beispiel:
+            red: "C" bedeutet, dass das rote Kabel an Anschluss C
+            angeschlossen werden muss.
+
+        Ändere einfach die Werte, um eine andere Lösung festzulegen.
+        ============================================================
+        */
+
+        const CORRECT_CONFIGURATION = {
+            red: "A",
+            blue: "B",
+            yellow: "D",
+            green: "C"
+        };
+
+        /*
+        ============================================================
+        NACHRICHT BEI ERFOLGREICHER ENTSCHLÜSSELUNG
+        ============================================================
+        */
+
+        const SUCCESS_MESSAGE =
+            "Zugriff freigegeben.\n\nDu hast das System erfolgreich entschlüsselt! Das Passwort lautet: 358";
+
+        /*
+        ============================================================
+        AB HIER MUSST DU NICHTS MEHR ÄNDERN
+        ============================================================
+        */
+
+        const wires = [
+            {
+                id: "red",
+                name: "ROT",
+                color: "#ff4058"
+            },
+            {
+                id: "blue",
+                name: "BLAU",
+                color: "#35a9ff"
+            },
+            {
+                id: "yellow",
+                name: "GELB",
+                color: "#ffd447"
+            },
+            {
+                id: "green",
+                name: "GRÜN",
+                color: "#4dff9b"
+            }
+        ];
+
+        const ports = [
+            { id: "A", name: "PORT A" },
+            { id: "B", name: "PORT B" },
+            { id: "C", name: "PORT C" },
+            { id: "D", name: "PORT D" }
+        ];
+
+        const connectionGrid = document.getElementById("connectionGrid");
+        const cableLayer = document.getElementById("cableLayer");
+        const status = document.getElementById("status");
+        const statusText = document.getElementById("statusText");
+        const decodeButton = document.getElementById("decodeButton");
+
+        const successDialog = document.getElementById("successDialog");
+        const successMessage = document.getElementById("successMessage");
+        const closeDialog = document.getElementById("closeDialog");
+
+        const wireButtons = {};
+        const portButtons = {};
+
+        // Speichert die aktuelle Verbindung für jedes Kabel.
+        // null bedeutet: Das Kabel ist noch nicht angeschlossen.
+        const connections = {
+            red: null,
+            blue: null,
+            yellow: null,
+            green: null
+        };
+
+        let selectedWire = null;
+
+        successMessage.textContent = SUCCESS_MESSAGE;
+
+        function createInterface() {
+            wires.forEach((wire, index) => {
+                const wireButton = document.createElement("button");
+
+                wireButton.type = "button";
+                wireButton.className = "wire-selector";
+                wireButton.style.gridRow = String(index + 1);
+                wireButton.style.setProperty("--wire-color", wire.color);
+                wireButton.setAttribute("aria-pressed", "false");
+                wireButton.setAttribute(
+                    "aria-label",
+                    `${wire.name}es Kabel auswählen`
+                );
+
+                wireButton.innerHTML = `
+                    <span class="wire-number">0${index + 1}</span>
+                    <span class="wire-name">${wire.name}</span>
+                    <span class="wire-swatch"></span>
+                    <span class="plug" aria-hidden="true"></span>
+                `;
+
+                wireButton.addEventListener("click", () => {
+                    selectWire(wire.id);
+                });
+
+                connectionGrid.appendChild(wireButton);
+                wireButtons[wire.id] = wireButton;
+
+                const port = ports[index];
+                const portButton = document.createElement("button");
+
+                portButton.type = "button";
+                portButton.className = "port-button";
+                portButton.style.gridRow = String(index + 1);
+                portButton.style.setProperty("--signal-color", "#34445c");
+                portButton.setAttribute(
+                    "aria-label",
+                    `${port.name} auswählen`
+                );
+
+                portButton.innerHTML = `
+                    <span class="socket" aria-hidden="true">
+                        <span class="socket-core"></span>
+                    </span>
+                    <span class="port-label">${port.name}</span>
+                    <span class="port-indicator" aria-hidden="true"></span>
+                `;
+
+                portButton.addEventListener("click", () => {
+                    connectWire(port.id);
+                });
+
+                connectionGrid.appendChild(portButton);
+                portButtons[port.id] = portButton;
+            });
+
+            updateInterface();
+        }
+
+        function setStatus(message, type = "") {
+            statusText.textContent = message;
+            status.className = "status";
+
+            if (type) {
+                status.classList.add(type);
+            }
+        }
+
+        function selectWire(wireId) {
+            if (selectedWire === wireId) {
+                selectedWire = null;
+                setStatus("KABELAUSWAHL AUFGEHOBEN.");
+            } else {
+                selectedWire = wireId;
+
+                const wire = wires.find(item => item.id === wireId);
+
+                setStatus(
+                    `${wire.name} AUSGEWÄHLT — JETZT ANSCHLUSS WÄHLEN.`
+                );
+            }
+
+            updateInterface();
+        }
+
+        function connectWire(portId) {
+            if (!selectedWire) {
+                setStatus(
+                    "BITTE ZUERST EIN KABEL AUSWÄHLEN.",
+                    "error"
+                );
+                return;
+            }
+
+            const wireId = selectedWire;
+            const previousPort = connections[wireId];
+
+            // Wird derselbe Anschluss erneut angeklickt,
+            // kann das Kabel wieder entfernt werden.
+            if (previousPort === portId) {
+                connections[wireId] = null;
+                selectedWire = null;
+
+                const wire = wires.find(item => item.id === wireId);
+
+                setStatus(`${wire.name} WURDE ENTFERNT.`);
+                updateInterface();
+                return;
+            }
+
+            // Sucht ein anderes Kabel, das bereits diesen Anschluss belegt.
+            const occupyingWire = wires.find(
+                wire => connections[wire.id] === portId
+            );
+
+            // Wird ein belegter Anschluss gewählt, werden die
+            // vorhandenen Verbindungen entsprechend getauscht.
+            if (occupyingWire && occupyingWire.id !== wireId) {
+                connections[occupyingWire.id] = previousPort;
+            }
+
+            connections[wireId] = portId;
+
+            const wire = wires.find(item => item.id === wireId);
+
+            selectedWire = null;
+
+            setStatus(
+                `${wire.name} → PORT ${portId} VERBUNDEN.`
+            );
+
+            updateInterface();
+        }
+
+        function updateInterface() {
+            wires.forEach(wire => {
+                const button = wireButtons[wire.id];
+                const isSelected = selectedWire === wire.id;
+
+                button.classList.toggle("is-selected", isSelected);
+                button.setAttribute(
+                    "aria-pressed",
+                    String(isSelected)
+                );
+            });
+
+            ports.forEach(port => {
+                const button = portButtons[port.id];
+
+                const connectedWire = wires.find(
+                    wire => connections[wire.id] === port.id
+                );
+
+                button.classList.toggle(
+                    "is-occupied",
+                    Boolean(connectedWire)
+                );
+
+                if (connectedWire) {
+                    button.style.setProperty(
+                        "--signal-color",
+                        connectedWire.color
+                    );
+                } else {
+                    button.style.setProperty(
+                        "--signal-color",
+                        "#34445c"
+                    );
+                }
+            });
+
+            drawCables();
+        }
+
+        function getElementCenter(element, containerRect) {
+            const rect = element.getBoundingClientRect();
+
+            return {
+                x: rect.left + rect.width / 2 - containerRect.left,
+                y: rect.top + rect.height / 2 - containerRect.top
+            };
+        }
+
+        function drawCables() {
+            const gridRect = connectionGrid.getBoundingClientRect();
+
+            if (!gridRect.width || !gridRect.height) {
+                return;
+            }
+
+            cableLayer.setAttribute(
+                "viewBox",
+                `0 0 ${gridRect.width} ${gridRect.height}`
+            );
+
+            const svgParts = [];
+
+            wires.forEach(wire => {
+                const portId = connections[wire.id];
+
+                if (!portId) {
+                    return;
+                }
+
+                const plug = wireButtons[wire.id].querySelector(".plug");
+                const socket = portButtons[portId].querySelector(".socket");
+
+                const start = getElementCenter(plug, gridRect);
+                const end = getElementCenter(socket, gridRect);
+
+                const distance = Math.abs(end.x - start.x);
+                const curve = Math.max(15, distance * 0.5);
+
+                const path = [
+                    `M ${start.x} ${start.y}`,
+                    `C ${start.x + curve} ${start.y},`,
+                    `${end.x - curve} ${end.y},`,
+                    `${end.x} ${end.y}`
+                ].join(" ");
+
+                svgParts.push(`
+                    <path
+                        class="cable-shadow"
+                        d="${path}"
+                    />
+                    <path
+                        class="cable-line"
+                        d="${path}"
+                        stroke="${wire.color}"
+                        style="filter: drop-shadow(0 0 4px ${wire.color});"
+                    />
+                `);
+            });
+
+            cableLayer.innerHTML = svgParts.join("");
+        }
+
+        function checkCombination() {
+            const allConnected = wires.every(
+                wire => connections[wire.id] !== null
+            );
+
+            if (!allConnected) {
+                setStatus(
+                    "FEHLER: VERBINDE ZUERST ALLE VIER KABEL.",
+                    "error"
+                );
+                return;
+            }
+
+            const isCorrect = wires.every(
+                wire =>
+                    connections[wire.id] ===
+                    CORRECT_CONFIGURATION[wire.id]
+            );
+
+            if (isCorrect) {
+                setStatus(
+                    "KOMBINATION BESTÄTIGT.",
+                    "success"
+                );
+
+                successDialog.showModal();
+            } else {
+                setStatus(
+                    "FALSCHE KOMBINATION — ÜBERPRÜFE DIE KABEL.",
+                    "error"
+                );
+            }
+        }
+
+        decodeButton.addEventListener("click", checkCombination);
+
+        closeDialog.addEventListener("click", () => {
+            successDialog.close();
+        });
+
+        // Zeichnet die Kabel nach Änderungen der Fenstergröße neu.
+        let resizeFrame = null;
+
+        window.addEventListener("resize", () => {
+            if (resizeFrame !== null) {
+                cancelAnimationFrame(resizeFrame);
+            }
+
+            resizeFrame = requestAnimationFrame(() => {
+                drawCables();
+                resizeFrame = null;
+            });
+        });
+
+        // Initialisierung
+        createInterface();
+    </script>
+
+</body>
+  </html>
